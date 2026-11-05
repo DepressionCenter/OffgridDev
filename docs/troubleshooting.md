@@ -3,7 +3,7 @@ This file is part of OffgridDev
 troubleshooting.md
 Author(s): Gabriel Mongefranco
 Created: 2026-08-06
-Last Modified: 2026-08-06
+Last Modified: 2026-11-02
 Summary: Documents known failure modes and their fixes for the OffgridDev stack, including
   stale model aliases and chat history migration, referenced from the README's
   Documentation section.
@@ -168,12 +168,37 @@ GPU model), then re-run the startup script. On a University-managed laptop, driv
 department's IT support if you don't have local admin rights.
 
 ## Resetting a stuck container
+Run the matching pair below from the repository root. Use the NVIDIA example if your stack was started
+with NVIDIA GPU support; restarting with only the base file removes the GPU request and can make Ollama
+fall back to CPU.
+
+**CPU-only:** no NVIDIA tools or GPU override required.
+
 ```
 docker compose -f docker/docker-compose.yml down
 docker compose -f docker/docker-compose.yml up -d
 ```
-This recreates the containers without touching anything in `data/` (models, chat history, uploads are all
-preserved — they live in the bind-mounted `data/` directory, not in the container itself).
+
+**NVIDIA GPU:** requires the same working NVIDIA container support used for the original startup. Keep
+the base file first and the GPU override second in both commands.
+
+```
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.gpu.yml down
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.gpu.yml up -d
+```
+
+Both examples recreate the containers while preserving models in `data/ollama` and chat history and
+uploads in `data/open-webui`. These directories are bind-mounted from the repository's `data/` directory;
+do not delete them when resetting containers.
+
+For automatic hardware selection, use the normal [stop and start scripts](installation-and-usage.md#starting-offgriddev)
+instead. The startup scripts explicitly request container image pulls and model pulls (including the RAG
+embedding model), so they may need internet access even when restarting an existing installation.
+
+For an offline container reset, use the applicable manual example above with images, models, and required
+caches already available locally. Add `--pull never` to its `up -d` command to prevent Compose from pulling
+images; a missing image will fail instead. These manual commands do not run the launcher's model pulls.
+See [RAG embeddings](#rag-embeddings) for the first-boot cache requirements.
 
 ---
 
