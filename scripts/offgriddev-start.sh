@@ -40,6 +40,28 @@ CONFIG="$ROOT/config/models.env"
 echo "=== OffgridDev ==="
 echo "Root: $ROOT"
 
+# Read model settings without executing them or rewriting the user's file.
+if [ ! -r "$CONFIG" ]; then
+  echo "ERROR: Cannot read model settings from $CONFIG." >&2
+  exit 1
+fi
+
+SETTING_PATTERN='^[[:blank:]]*(ENABLE_[A-Z0-9_]+)=([01])([[:blank:]]+#.*)?[[:blank:]]*$'
+COMMENT_OR_BLANK='^[[:blank:]]*(#|$)'
+LINE_NUMBER=0
+while IFS= read -r LINE || [ -n "$LINE" ]; do
+  LINE_NUMBER=$((LINE_NUMBER + 1))
+  LINE="${LINE%$'\r'}"
+  if [[ "$LINE" =~ $COMMENT_OR_BLANK ]]; then
+    continue
+  fi
+  if ! [[ "$LINE" =~ $SETTING_PATTERN ]]; then
+    echo "ERROR: Invalid model setting at $CONFIG:$LINE_NUMBER. Use ENABLE_NAME=0 or ENABLE_NAME=1." >&2
+    exit 1
+  fi
+  printf -v "${BASH_REMATCH[1]}" '%s' "${BASH_REMATCH[2]}"
+done < "$CONFIG"
+
 # Check Docker
 if ! command -v docker >/dev/null 2>&1; then
   echo "ERROR: Docker is not installed."
@@ -146,9 +168,6 @@ if [ "$VRAM_MB" -gt 0 ]; then
     fi
   fi
 fi
-
-# Load config
-source "$CONFIG"
 
 # --------------------------------------------------
 # Enforce sane model selection by VRAM
