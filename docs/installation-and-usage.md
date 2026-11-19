@@ -152,11 +152,16 @@ startup scripts, so they're unaffected either way.
 
 ### Automatic Setup
 
-The startup script writes:
+On the first run without a Continue configuration, the startup script creates:
 ```
 C:\Users\<you>\.continue\config.yaml     (Windows)
 ~/.continue/config.yaml                  (macOS/Linux)
 ```
+
+If `config.yaml` exists, the launcher preserves it and writes
+`offgriddev.config.yaml` in the same directory. To use the generated models,
+copy the model entries you want into the `models:` section of your existing
+`config.yaml`. Subsequent runs refresh `offgriddev.config.yaml`.
 
 One named entry is generated per model that pulled successfully this run — friendly name, alias tag, and a
 task-appropriate role set (coding models get the full `chat`/`edit`/`apply`/`autocomplete`/`rerank` set;
