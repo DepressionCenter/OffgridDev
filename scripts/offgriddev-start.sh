@@ -263,7 +263,7 @@ pull() {
     fi
     return 0
   fi
-  if docker exec -it offgriddev-ollama ollama pull "$model"; then
+  if docker exec offgriddev-ollama ollama pull "$model"; then
     local final_tag="$model"
     if [ -n "$alias" ]; then
       # Renaming the Ollama tag itself (not an Open WebUI-only rename) is the only
@@ -271,11 +271,11 @@ pull() {
       # which read Ollama's /api/tags verbatim. `ollama cp` shares blobs (zero extra
       # disk); the `ollama rm` of the raw tag below is safe/refcounted - it only drops
       # the tag, never a blob the new alias still references.
-      if ! docker exec -it offgriddev-ollama ollama cp "$model" "$alias"; then
+      if ! docker exec offgriddev-ollama ollama cp "$model" "$alias"; then
         # `ollama cp` fails if the alias already exists - expected on a repeat run of
         # this script, not a real error. Confirm the alias is actually there before
         # treating this as success rather than assuming every cp failure is harmless.
-        if ! docker exec -it offgriddev-ollama ollama show "$alias" >/dev/null 2>&1; then
+        if ! docker exec offgriddev-ollama ollama show "$alias" >/dev/null 2>&1; then
           echo ""
           echo "WARNING: Failed to pull ${label} (${model}). Skipping it and continuing with the remaining models."
           echo "  ollama cp ${model} -> ${alias} failed and ${alias} does not already exist"
@@ -286,7 +286,7 @@ pull() {
           return 0
         fi
       fi
-      docker exec -it offgriddev-ollama ollama rm "$model" >/dev/null 2>&1
+      docker exec offgriddev-ollama ollama rm "$model" >/dev/null 2>&1
       final_tag="$alias"
     fi
     if [ "$is_chat_model" = "1" ]; then

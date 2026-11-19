@@ -324,7 +324,7 @@ function Pull-Model($model, $label, [bool]$IsChatModel = $true, [string]$Alias =
         return
     }
     try {
-        & $Docker exec -it offgriddev-ollama ollama pull $model
+        & $Docker exec offgriddev-ollama ollama pull $model
         if ($LASTEXITCODE -ne 0) {
             throw "ollama pull exited with code $LASTEXITCODE"
         }
@@ -336,18 +336,18 @@ function Pull-Model($model, $label, [bool]$IsChatModel = $true, [string]$Alias =
             # which read Ollama's /api/tags verbatim. `ollama cp` shares blobs (zero extra
             # disk); the `ollama rm` of the raw tag below is safe/refcounted - it only drops
             # the tag, never a blob the new alias still references.
-            & $Docker exec -it offgriddev-ollama ollama cp $model $Alias
+            & $Docker exec offgriddev-ollama ollama cp $model $Alias
             if ($LASTEXITCODE -ne 0) {
                 # `ollama cp` fails if the alias already exists - expected on a repeat run
                 # of this script, not a real error. Confirm the alias is actually there
                 # before treating this as success rather than assuming every cp failure is
                 # the harmless idempotent case.
-                & $Docker exec -it offgriddev-ollama ollama show $Alias *> $null
+                & $Docker exec offgriddev-ollama ollama show $Alias *> $null
                 if ($LASTEXITCODE -ne 0) {
                     throw "ollama cp $model -> $Alias failed and $Alias does not already exist"
                 }
             }
-            & $Docker exec -it offgriddev-ollama ollama rm $model *> $null
+            & $Docker exec offgriddev-ollama ollama rm $model *> $null
             $FinalTag = $Alias
         }
 
