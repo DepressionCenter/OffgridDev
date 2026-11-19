@@ -432,6 +432,8 @@ fi
 CONTINUE_DIR="$HOME/.continue"
 CONTINUE_CONFIG="$CONTINUE_DIR/config.yaml"
 mkdir -p "$CONTINUE_DIR"
+CONTINUE_TEMP="$(mktemp "$CONTINUE_DIR/.offgriddev.XXXXXX")"
+trap 'rm -f -- "$CONTINUE_TEMP"' EXIT
 
 {
   echo "name: OffgridDev"
@@ -456,7 +458,23 @@ mkdir -p "$CONTINUE_DIR"
   for ROLE in chat edit apply rerank autocomplete; do
     echo "      - ${ROLE}"
   done
-} > "$CONTINUE_CONFIG"
+} > "$CONTINUE_TEMP"
+
+# Publish the complete file without replacing a config created by another run.
+if [ ! -e "$CONTINUE_CONFIG" ] && [ ! -L "$CONTINUE_CONFIG" ] && ln -n "$CONTINUE_TEMP" "$CONTINUE_CONFIG" 2>/dev/null; then
+  rm -f -- "$CONTINUE_TEMP"
+elif [ -e "$CONTINUE_CONFIG" ] || [ -L "$CONTINUE_CONFIG" ]; then
+  CONTINUE_CONFIG="$CONTINUE_DIR/offgriddev.config.yaml"
+  if [ -L "$CONTINUE_CONFIG" ] || { [ -e "$CONTINUE_CONFIG" ] && [ ! -f "$CONTINUE_CONFIG" ]; }; then
+    echo "ERROR: Cannot write generated Continue settings to $CONTINUE_CONFIG." >&2
+    exit 1
+  fi
+  mv -f -- "$CONTINUE_TEMP" "$CONTINUE_CONFIG"
+  echo "Keeping existing Continue configuration. Copy the model entries you want from the generated file into your config.yaml."
+else
+  echo "ERROR: Cannot create $CONTINUE_CONFIG." >&2
+  exit 1
+fi
 
 echo "Continue config written to:"
 echo "$CONTINUE_CONFIG"

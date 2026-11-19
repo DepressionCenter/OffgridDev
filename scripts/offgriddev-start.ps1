@@ -619,7 +619,27 @@ foreach ($Role in @("chat", "edit", "apply", "rerank", "autocomplete")) {
     $ContinueConfigLines += "      - $Role"
 }
 
-$ContinueConfigLines | Set-Content -Path $ContinueConfig -Encoding utf8
+$ContinueTemp = Join-Path $ContinueDir (".offgriddev-" + [guid]::NewGuid().ToString("N") + ".tmp")
+try {
+    $ContinueConfigLines | Set-Content -LiteralPath $ContinueTemp -Encoding utf8
+    try {
+        # This overload of Move fails if the destination already exists.
+        [IO.File]::Move($ContinueTemp, $ContinueConfig)
+    } catch [IO.IOException] {
+        if (-not (Get-Item -LiteralPath $ContinueConfig -Force -ErrorAction SilentlyContinue)) { throw }
+        $ContinueConfig = Join-Path $ContinueDir "offgriddev.config.yaml"
+        $ExistingOutput = Get-Item -LiteralPath $ContinueConfig -Force -ErrorAction SilentlyContinue
+        if ($ExistingOutput -and ($ExistingOutput.PSIsContainer -or ($ExistingOutput.Attributes -band [IO.FileAttributes]::ReparsePoint))) {
+            Fail "Cannot write generated Continue settings to $ContinueConfig."
+        }
+        Move-Item -LiteralPath $ContinueTemp -Destination $ContinueConfig -Force
+        Write-Host "Keeping existing Continue configuration. Copy the model entries you want from the generated file into your config.yaml."
+    }
+} finally {
+    if (Test-Path -LiteralPath $ContinueTemp) {
+        Remove-Item -LiteralPath $ContinueTemp
+    }
+}
 
 Write-Host "Continue config written to:"
 Write-Host $ContinueConfig
