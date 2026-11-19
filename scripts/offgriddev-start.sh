@@ -393,33 +393,42 @@ fi
 # the request - Ollama then rejects every message for these models with "does not support
 # tools". Setting each one's Function Calling param to "legacy" here (equivalent to
 # Workspace -> Models -> Edit -> Function Calling -> Legacy in the UI) makes Open WebUI
-# fall back to prompt-based tool use instead, which these models do support. Non-fatal and
-# silently skipped if WEBUI_AUTH has been turned back on, since the blank-password sign-in
-# this relies on only works with auth off. IDs use the alias tags written above, since the
+# fall back to prompt-based tool use instead, which these models do support. This optional
+# setup uses the local, unauthenticated Web UI. IDs use the alias tags written above, since the
 # raw tags stop existing once `ollama rm` runs.
 NON_TOOL_MODEL_IDS=(deepseek-coder:small-coding deepseek-coder:medium-coding deepseek-coder:xlarge-coding gemma3:small-general gemma3:medium-general phi4:small-reasoning phi4:large-reasoning moondream:small-vision qwen25vl:medium-vision)
 NON_TOOL_MODEL_NAMES=("DeepSeek Coder 1.3B" "DeepSeek Coder 6.7B" "DeepSeek Coder 33B" "Gemma 3 1B" "Gemma 3 4B" "Phi4 Mini Reasoning 3.8B" "Phi4 Reasoning 14B" "Moondream 1.8B" "Qwen 2.5 VL 7B")
 
-SIGNIN_RESPONSE="$(curl -s -X POST http://localhost:3000/api/v1/auths/signin -H "Content-Type: application/json" -d '{"email":"admin@localhost","password":""}')"
-WEBUI_TOKEN="$(echo "$SIGNIN_RESPONSE" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')"
+configure_webui_models() {
+  local -a curl_options=(--silent --connect-timeout 2 --max-time 5)
+  local signin_response webui_token model_id model_name model_payload http_code i
+  signin_response="$(curl "${curl_options[@]}" --fail -X POST http://localhost:3000/api/v1/auths/signin \
+    -H "Content-Type: application/json" -d '{"email":"admin@localhost","password":""}')" || return 1
+  webui_token="$(printf '%s\n' "$signin_response" | sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+  [ -n "$webui_token" ] || return 1
 
-if [ -n "$WEBUI_TOKEN" ]; then
   for i in "${!NON_TOOL_MODEL_IDS[@]}"; do
-    MODEL_ID="${NON_TOOL_MODEL_IDS[$i]}"
-    MODEL_NAME="${NON_TOOL_MODEL_NAMES[$i]}"
-    MODEL_PAYLOAD="{\"id\":\"${MODEL_ID}\",\"base_model_id\":\"${MODEL_ID}\",\"name\":\"${MODEL_NAME}\",\"meta\":{},\"params\":{\"function_calling\":\"legacy\"},\"is_active\":true}"
-    CREATE_HTTP_CODE="$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/v1/models/create \
-      -H "Content-Type: application/json" -H "Authorization: Bearer $WEBUI_TOKEN" -d "$MODEL_PAYLOAD")"
-    if [ "$CREATE_HTTP_CODE" != "200" ]; then
-      # Most likely this model ID already exists (e.g. re-running this script, or a manual
-      # edit in the UI left it misconfigured) - fall back to updating it in place so the
-      # fix still applies. Failure here is non-fatal either way.
-      curl -s -o /dev/null -X POST http://localhost:3000/api/v1/models/model/update \
-        -H "Content-Type: application/json" -H "Authorization: Bearer $WEBUI_TOKEN" -d "$MODEL_PAYLOAD"
-    fi
+    model_id="${NON_TOOL_MODEL_IDS[$i]}"
+    model_name="${NON_TOOL_MODEL_NAMES[$i]}"
+    model_payload="{\"id\":\"${model_id}\",\"base_model_id\":\"${model_id}\",\"name\":\"${model_name}\",\"meta\":{},\"params\":{\"function_calling\":\"legacy\"},\"is_active\":true}"
+    http_code="$(curl "${curl_options[@]}" -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/v1/models/create \
+      -H "Content-Type: application/json" -H "Authorization: Bearer $webui_token" -d "$model_payload")" || return 1
+    case "$http_code" in
+      2??) continue ;;
+      400|409)
+        # Existing models may need an update instead of a create.
+        http_code="$(curl "${curl_options[@]}" -o /dev/null -w '%{http_code}' -X POST http://localhost:3000/api/v1/models/model/update \
+          -H "Content-Type: application/json" -H "Authorization: Bearer $webui_token" -d "$model_payload")" || return 1
+        [[ "$http_code" == 2?? ]] || return 1
+        ;;
+      *) return 1 ;;
+    esac
   done
-else
-  echo "NOTE: Could not auto-configure DeepSeek Coder / Gemma 3 / Phi / Moondream / Qwen 2.5 VL for tool compatibility (Open WebUI auth may be enabled). See README's Troubleshooting section to do it manually."
+}
+
+if ! configure_webui_models; then
+  echo "WARNING: Could not finish setting up model tool compatibility in Open WebUI. Set Function Calling to Legacy manually." >&2
+  echo "https://github.com/DepressionCenter/OffgridDev/blob/main/docs/troubleshooting.md#tools-errors-on-deepseek-coder--gemma-3" >&2
 fi
 
 # --------------------------------------------------
