@@ -41,10 +41,12 @@ Initial setup and model downloads require access to the relevant dependencies an
 4. Start the stack:
    - Windows: `powershell -ExecutionPolicy Bypass -File scripts\offgriddev-start.ps1`
    - macOS / Linux: `./scripts/offgriddev-start.sh`
+   - macOS / Linux after extracting a ZIP: `bash scripts/offgriddev-start.sh`
 5. Open http://localhost:3000 to chat, or use VS Code's Continue extension (config written automatically). Alternatively, you can download [FieldStationAI](https://github.com/DepressionCenter/FieldStationAI), launch it, and go to Menu -> Enable Ollama. It will automatically detect the local Ollama API and connect.
 6. Stop the stack when done:
    - Windows: `powershell -ExecutionPolicy Bypass -File scripts\offgriddev-stop.ps1`
    - macOS / Linux: `./scripts/offgriddev-stop.sh`
+   - macOS / Linux after extracting a ZIP: `bash scripts/offgriddev-stop.sh`
 
 For hardware requirements, full setup steps, and troubleshooting, see Documentation below.
 
