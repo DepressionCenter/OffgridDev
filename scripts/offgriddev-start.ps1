@@ -43,11 +43,8 @@ $script:ScriptCompletedNormally = $false
 $script:ExpectedExit = $false
 
 function Fail($msg) {
-    Write-Host ""
-    Write-Error $msg
-    Write-Host ""
-    Read-Host "Press Enter to exit"
     $script:ExpectedExit = $true
+    [Console]::Error.WriteLine("ERROR: $msg")
     exit 1
 }
 
@@ -249,7 +246,13 @@ if ($VramMb -gt 0) {
 }
 
 & $Docker compose @ComposeArgs pull
+if ($LASTEXITCODE -ne 0) {
+    Fail "Docker Compose could not download the images (exit code $LASTEXITCODE). Check Docker's output and try again."
+}
 & $Docker compose @ComposeArgs up -d
+if ($LASTEXITCODE -ne 0) {
+    Fail "Docker Compose could not start OffgridDev (exit code $LASTEXITCODE). Check Docker's output and try again."
+}
 
 # --------------------------------------------------
 # Verify the GPU override actually got used, not just requested
