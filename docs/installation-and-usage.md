@@ -87,7 +87,7 @@ There isn't one. `docker/docker-compose.yml` sets `WEBUI_AUTH=False`, so Open We
 sign-in screen and runs as a single implicit local user — matching this project's
 offline, single-developer-machine design.
 
-Note: This is only safe because port 3000 is published to `localhost` by default. If you
+Both the Web UI (port 3000) and the Ollama API (port 11434) bind to `127.0.0.1` on the host by default. If you
 ever change `docker-compose.yml` to expose that port on your network (or forward it
 through a tunnel), remove `WEBUI_AUTH=False` first — anyone who can reach the port would
 otherwise have unauthenticated access to your chats, uploaded files, and any model the
