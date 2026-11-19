@@ -23,13 +23,21 @@ $Root = Resolve-Path "$PSScriptRoot\.."
 $ComposeFile = Join-Path $Root "docker\docker-compose.yml"
 
 try {
-  docker info | Out-Null
+  docker info *> $null
+  $dockerReady = $LASTEXITCODE -eq 0
 } catch {
-  Write-Error "Docker is not running."
+  $dockerReady = $false
+}
+if (-not $dockerReady) {
+  [Console]::Error.WriteLine("ERROR: Docker is unavailable. Start Docker Desktop and try again.")
   exit 1
 }
 
 # Referenced by absolute path (no `cd`) so this doesn't leave the user's shell sitting in
 # docker\ afterward - Set-Location changes persist in the caller's session in PowerShell.
 docker compose -f $ComposeFile down
+if ($LASTEXITCODE -ne 0) {
+  [Console]::Error.WriteLine("ERROR: Docker Compose could not stop OffgridDev (exit code $LASTEXITCODE). Check Docker's output and try again.")
+  exit 1
+}
 Write-Host "OffgridDev stopped."
