@@ -54,6 +54,7 @@ For hardware requirements, full setup steps, and troubleshooting, see Documentat
   - [Hardware & Model Configuration](docs/hardware-and-model-configuration.md) — GPU/VRAM/disk requirements, supported model families, and the `config/models.env` reference.
   - [Installation & Usage](docs/installation-and-usage.md) — full install steps, starting/stopping the stack, the Open WebUI web interface, and VS Code/Continue integration.
   - [Troubleshooting](docs/troubleshooting.md) — container logs, tool-calling errors, RAG embeddings, GPU fallback detection, and resetting a stuck container.
+  - [Contributing](CONTRIBUTING.md) — first changes and checks that run without model downloads.
 
 
 ## Additional Resources

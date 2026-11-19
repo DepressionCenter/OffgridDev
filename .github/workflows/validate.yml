@@ -1,0 +1,58 @@
+# This file is part of OffgridDev
+# validate.yml
+# Author(s): OffgridDev contributors
+# Created: 2026-11-20
+# Summary: Checks the launcher scripts and Compose configuration without starting containers.
+# Notes: See README file for documentation and full license information.
+#
+# Copyright © 2026 The Regents of the University of Michigan
+# Licensed under the GNU General Public License v3.0 or later.
+# See <https://www.gnu.org/licenses/gpl-3.0-standalone.html>.
+
+name: Validate scripts and Compose
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check Bash syntax
+        shell: bash
+        run: |
+          for file in scripts/*.sh; do
+            bash -n "$file"
+          done
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($file in Get-ChildItem scripts/*.ps1) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $file.FullName, [ref]$tokens, [ref]$errors
+            ) | Out-Null
+            foreach ($parseError in $errors) {
+              Write-Host "${file}:$($parseError.Extent.StartLineNumber): $($parseError.Message)"
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Check Docker Compose configuration
+        run: |
+          docker compose -f docker/docker-compose.yml config --quiet
+          docker compose -f docker/docker-compose.yml -f docker/docker-compose.gpu.yml config --quiet
