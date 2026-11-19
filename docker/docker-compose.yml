@@ -18,7 +18,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: offgriddev-ollama
-    ports: ['11434:11434']
+    ports: ['127.0.0.1:11434:11434']
     environment:
       # Caps concurrent requests to 1 so a second request can't launch a second model
       # load on top of an already-resident one and exhaust GPU/CPU memory.
@@ -31,12 +31,11 @@ services:
     image: ghcr.io/open-webui/open-webui:latest
     container_name: offgriddev-webui
     depends_on: [ollama]
-    ports: ['3000:8080']
+    ports: ['127.0.0.1:3000:8080']
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       # Skips Open WebUI's login screen entirely (single implicit local user, no
-      # password). Safe here because the port is only published to localhost - see
-      # the "Login" note under Web Interface in the README before changing that.
+      # password). Keep the host binding on loopback when authentication is disabled.
       - WEBUI_AUTH=False
       # By default Open WebUI computes RAG embeddings with a local sentence-transformers
       # model (all-MiniLM-L6-v2) that it fetches from huggingface.co - on first boot, and
