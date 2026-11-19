@@ -42,9 +42,7 @@ C:\OffgridDev
 ```
 
 ### macOS / Linux
-```
-~/offgriddev
-```
+Clone the repository or extract the ZIP to `~/offgriddev`. Run the commands below from that directory.
 
 ## Starting OffgridDev
 
@@ -62,6 +60,8 @@ without changing your system-wide policy.)
 ./scripts/offgriddev-start.sh
 ```
 
+If you extracted a ZIP, run `bash scripts/offgriddev-start.sh` to start without relying on executable permissions.
+
 ## Stopping
 
 ### Windows
@@ -73,6 +73,8 @@ powershell -ExecutionPolicy Bypass -File scripts\offgriddev-stop.ps1
 ```
 ./scripts/offgriddev-stop.sh
 ```
+
+If you extracted a ZIP, run `bash scripts/offgriddev-stop.sh` to stop without relying on executable permissions.
 
 ## Web Interface
 
